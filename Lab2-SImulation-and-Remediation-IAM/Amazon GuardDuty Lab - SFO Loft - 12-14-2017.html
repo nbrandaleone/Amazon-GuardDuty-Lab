@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Amazon GuardDuty Lab 2 - SFO Loft - 12-14-2017</title>
+
+
+<style type="text/css">
+body {
+  font-family: Helvetica, arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background-color: white;
+  padding: 30px; }
+
+body > *:first-child {
+  margin-top: 0 !important; }
+body > *:last-child {
+  margin-bottom: 0 !important; }
+
+a {
+  color: #4183C4; }
+a.absent {
+  color: #cc0000; }
+a.anchor {
+  display: block;
+  padding-left: 30px;
+  margin-left: -30px;
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0; }
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 20px 0 10px;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative; }
+
+h1:hover a.anchor, h2:hover a.anchor, h3:hover a.anchor, h4:hover a.anchor, h5:hover a.anchor, h6:hover a.anchor {
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA09pVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoMTMuMCAyMDEyMDMwNS5tLjQxNSAyMDEyLzAzLzA1OjIxOjAwOjAwKSAgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OUM2NjlDQjI4ODBGMTFFMTg1ODlEODNERDJBRjUwQTQiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OUM2NjlDQjM4ODBGMTFFMTg1ODlEODNERDJBRjUwQTQiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo5QzY2OUNCMDg4MEYxMUUxODU4OUQ4M0REMkFGNTBBNCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo5QzY2OUNCMTg4MEYxMUUxODU4OUQ4M0REMkFGNTBBNCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PsQhXeAAAABfSURBVHjaYvz//z8DJYCRUgMYQAbAMBQIAvEqkBQWXI6sHqwHiwG70TTBxGaiWwjCTGgOUgJiF1J8wMRAIUA34B4Q76HUBelAfJYSA0CuMIEaRP8wGIkGMA54bgQIMACAmkXJi0hKJQAAAABJRU5ErkJggg==) no-repeat 10px center;
+  text-decoration: none; }
+
+h1 tt, h1 code {
+  font-size: inherit; }
+
+h2 tt, h2 code {
+  font-size: inherit; }
+
+h3 tt, h3 code {
+  font-size: inherit; }
+
+h4 tt, h4 code {
+  font-size: inherit; }
+
+h5 tt, h5 code {
+  font-size: inherit; }
+
+h6 tt, h6 code {
+  font-size: inherit; }
+
+h1 {
+  font-size: 28px;
+  color: black; }
+
+h2 {
+  font-size: 24px;
+  border-bottom: 1px solid #cccccc;
+  color: black; }
+
+h3 {
+  font-size: 18px; }
+
+h4 {
+  font-size: 16px; }
+
+h5 {
+  font-size: 14px; }
+
+h6 {
+  color: #777777;
+  font-size: 14px; }
+
+p, blockquote, ul, ol, dl, li, table, pre {
+  margin: 15px 0; }
+
+hr {
+  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAECAYAAACtBE5DAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OENDRjNBN0E2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OENDRjNBN0I2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo4Q0NGM0E3ODY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo4Q0NGM0E3OTY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PqqezsUAAAAfSURBVHjaYmRABcYwBiM2QSA4y4hNEKYDQxAEAAIMAHNGAzhkPOlYAAAAAElFTkSuQmCC) repeat-x 0 0;
+  border: 0 none;
+  color: #cccccc;
+  height: 4px;
+  padding: 0;
+}
+
+body > h2:first-child {
+  margin-top: 0;
+  padding-top: 0; }
+body > h1:first-child {
+  margin-top: 0;
+  padding-top: 0; }
+  body > h1:first-child + h2 {
+    margin-top: 0;
+    padding-top: 0; }
+body > h3:first-child, body > h4:first-child, body > h5:first-child, body > h6:first-child {
+  margin-top: 0;
+  padding-top: 0; }
+
+a:first-child h1, a:first-child h2, a:first-child h3, a:first-child h4, a:first-child h5, a:first-child h6 {
+  margin-top: 0;
+  padding-top: 0; }
+
+h1 p, h2 p, h3 p, h4 p, h5 p, h6 p {
+  margin-top: 0; }
+
+li p.first {
+  display: inline-block; }
+li {
+  margin: 0; }
+ul, ol {
+  padding-left: 30px; }
+
+ul :first-child, ol :first-child {
+  margin-top: 0; }
+
+dl {
+  padding: 0; }
+  dl dt {
+    font-size: 14px;
+    font-weight: bold;
+    font-style: italic;
+    padding: 0;
+    margin: 15px 0 5px; }
+    dl dt:first-child {
+      padding: 0; }
+    dl dt > :first-child {
+      margin-top: 0; }
+    dl dt > :last-child {
+      margin-bottom: 0; }
+  dl dd {
+    margin: 0 0 15px;
+    padding: 0 15px; }
+    dl dd > :first-child {
+      margin-top: 0; }
+    dl dd > :last-child {
+      margin-bottom: 0; }
+
+blockquote {
+  border-left: 4px solid #dddddd;
+  padding: 0 15px;
+  color: #777777; }
+  blockquote > :first-child {
+    margin-top: 0; }
+  blockquote > :last-child {
+    margin-bottom: 0; }
+
+table {
+  padding: 0;border-collapse: collapse; }
+  table tr {
+    border-top: 1px solid #cccccc;
+    background-color: white;
+    margin: 0;
+    padding: 0; }
+    table tr:nth-child(2n) {
+      background-color: #f8f8f8; }
+    table tr th {
+      font-weight: bold;
+      border: 1px solid #cccccc;
+      margin: 0;
+      padding: 6px 13px; }
+    table tr td {
+      border: 1px solid #cccccc;
+      margin: 0;
+      padding: 6px 13px; }
+    table tr th :first-child, table tr td :first-child {
+      margin-top: 0; }
+    table tr th :last-child, table tr td :last-child {
+      margin-bottom: 0; }
+
+img {
+  max-width: 100%; }
+
+span.frame {
+  display: block;
+  overflow: hidden; }
+  span.frame > span {
+    border: 1px solid #dddddd;
+    display: block;
+    float: left;
+    overflow: hidden;
+    margin: 13px 0 0;
+    padding: 7px;
+    width: auto; }
+  span.frame span img {
+    display: block;
+    float: left; }
+  span.frame span span {
+    clear: both;
+    color: #333333;
+    display: block;
+    padding: 5px 0 0; }
+span.align-center {
+  display: block;
+  overflow: hidden;
+  clear: both; }
+  span.align-center > span {
+    display: block;
+    overflow: hidden;
+    margin: 13px auto 0;
+    text-align: center; }
+  span.align-center span img {
+    margin: 0 auto;
+    text-align: center; }
+span.align-right {
+  display: block;
+  overflow: hidden;
+  clear: both; }
+  span.align-right > span {
+    display: block;
+    overflow: hidden;
+    margin: 13px 0 0;
+    text-align: right; }
+  span.align-right span img {
+    margin: 0;
+    text-align: right; }
+span.float-left {
+  display: block;
+  margin-right: 13px;
+  overflow: hidden;
+  float: left; }
+  span.float-left span {
+    margin: 13px 0 0; }
+span.float-right {
+  display: block;
+  margin-left: 13px;
+  overflow: hidden;
+  float: right; }
+  span.float-right > span {
+    display: block;
+    overflow: hidden;
+    margin: 13px auto 0;
+    text-align: right; }
+
+code, tt {
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px; }
+
+pre code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent; }
+
+.highlight pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  font-size: 13px;
+  line-height: 19px;
+  overflow: auto;
+  padding: 6px 10px;
+  border-radius: 3px; }
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  font-size: 13px;
+  line-height: 19px;
+  overflow: auto;
+  padding: 6px 10px;
+  border-radius: 3px; }
+  pre code, pre tt {
+    background-color: transparent;
+    border: none; }
+
+sup {
+    font-size: 0.83em;
+    vertical-align: super;
+    line-height: 0;
+}
+
+kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  font-size: 11px;
+  line-height: 10px;
+  color: #555;
+  vertical-align: middle;
+  background-color: #fcfcfc;
+  border: solid 1px #ccc;
+  border-bottom-color: #bbb;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 #bbb
+}
+
+* {
+	-webkit-print-color-adjust: exact;
+}
+@media screen and (min-width: 914px) {
+    body {
+        width: 854px;
+        margin:0 auto;
+    }
+}
+@media print {
+	table, pre {
+		page-break-inside: avoid;
+	}
+	pre {
+		word-wrap: break-word;
+	}
+}
+</style>
+
+
+</head>
+
+<body>
+
+<h1 id="toc_0">Amazon GuardDuty Lab</h1>
+
+<p><img src="images/GuardDuty-service-icon.png" alt="GuardDuty logo"> SFO Loft 12/14/17 <img src="images/AWS-logo.png" alt="AWS logo"></p>
+
+<h2 id="toc_2">Lab 2 - Simulation and Remediation of Compromised IAM Credentials</h2>
+
+<p>For Lab 2 you will be setting up an environment which will allow you to trigger a number of IAM related GuardDuty findings.  You will be adding your IP address to the current Threat List and be making a number of API calls which will simulate reconnaissance and unauthorized access findings.  You will also be stealing credentials off an EC2 instance and making API calls locally to simulate an instance credential exfiltration finding.  You'll receive email alerts for the various findings and one of them will also be triggering a Lambda function to automatically remediate the issue. Below is a visual of the environment you will be setting up:</p>
+<img src="images/environment.png" alt="Environment">
+
+<h3 id="toc_3"><i>Environment Setup</i></h3>
+
+<h3 id="toc_4">Run the CloudFormation Template</h3>
+
+<p>The template will create a single EC2 instance and the supporting resources (SNS topic, Lambda Function, IAM Roles, etc) to enable you to simulate compromised AWS IAM credentials.  You can click this <strong><a target="_blank" href="https://console.aws.amazon.com/cloudformation/home?region=us-west-2#cstack=sn%7ESFO-Loft-GuardDuty-Lab2%7Cturl%7Ehttps://s3-us-west-2.amazonaws.com/loftlab.gregmcconnel.net/gd-lab/sfo-loft-guardduty-lab-2.yml">link</a></strong> to launch the template.  You can also just go directly to the CloudFormation service and upload the file from there.  You can find the file for the CloudFormation template (<strong>sfo-loft-guardduty-lab-2.yml</strong>) is in the root of the Lab2-Simulation-and-Remediation-IAM directory in the folder from the zip file you downloaded and expanded.  Please create the stack in <strong>us-west-2</strong> (Oregon).</p>
+
+<ol>
+<li>Click <strong>Create Stack</strong> in the <a target="_blank" href="https://console.aws.amazon.com/cloudformation">CloudFormation console</a> and under <strong>Choose a template</strong> select either <strong>Upload a template to Amazon S3</strong> or <strong>Specify an Amazon S3 template URL</strong>.</lo> 
+
+<li>On the <strong>Specify Details</strong> screen you will need to enter a number of parameters.  Below is an example: </lo>
+
+<img src="images/cfn-parameters.png" alt="CloudFormation Parameters">
+
+<li>On the <strong>Options</strong> screen leave all the defaults and click <strong>Next</strong>.</li> 
+<li>On the <strong>Review</strong> screen check the Capabilities checkbox as shown below and click <strong>Create</strong>.</li> 
+
+<img src="images/cfn-review.png" alt="CloudFormation Parameters">
+</ol>
+
+<h3 id="toc_5">Update Threat List Text File</h3>
+
+<p>In order to simulate a GuardDuty finding you'll be uploading your IP address to your Threat List and and then be updating it in GuardDuty.</p>
+<ol>
+<li>Find your IP Address (you can always find it at <a target="_blank" href="https://www.whatismyip.com/">https://www.whatismyip.com/</a>).  </li>
+<li>Modify your threat list text file to include your IP Address and upload it back to S3 (same activity as the first lab).  If you're behind a proxy and your IP address is changing you may need to add a larger range such as (x.x.x.x/24) in order to successfully generate findings.</li>
+</ol>
+
+<h3 id="toc_6">Update your GuardDuty Threat List</h3>
+
+<ol>
+<li>Open the <a href="https://console.aws.amazon.com/guardduty">GuardDuty console</a></li>
+<li>In the navigation pane, under <strong>Settings</strong>, choose <strong>Lists</strong></li>
+<li>On the List management page, choose the edit button to right of your list.</li>
+<li>In the dialog box, verify the following is correct:
+
+<ul>
+<li>For List name, type a name for the list.</li>
+<li>For Location, specify the URL of the file you uploaded to S3 in the previous step (format should be https://s3.amazonaws.com/bucket_name/file.txt - this is the S3 bucket where you store the threat list)</li>
+<li>For Format, <strong>plaintext</strong></li>
+<li>Select the <strong>I agree</strong> check box</li>
+<li>Click <strong>Update list</strong></li>
+</ul></li>
+<li>Activate it by checking the box under <strong>Active</strong> in the row where your threat list is located.</li>
+</ol>
+
+<h3 id="toc_7">Confirm SNS Subscription</h3>
+
+<p>By now you should have received an email asking to confirm your SNS subscription.  Click confirm to ensure you get remediation emails.</p>
+
+
+<h3 id="toc_8">Add a Remediation CloudWatch Rule</h3>
+
+<p>In this step you'll be adding a CloudWatch Rule in order to trigger your remediation Lambda function whenever GuardDuty flags any findings.  Below are steps to create this rule through the console but you can also find out more about doing it programmatically by reviewing the <a href="http://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings_cloudwatch.html">GuardDuty Documentation</a>. </p>
+
+<ol>
+<li>Open the <a href="https://console.aws.amazon.com/cloudwatch">CloudWatch console</a></li>
+<li>In the navigation pane, under <strong>Events</strong>, choose <strong>Rules</strong></li>
+<li>Choose <strong>Create Rule</strong></li>
+<li>In the dialog box, add the following is correct:
+
+<ul>
+<li>For Event Source, choose Event Pattern and set <strong>Service Name</strong> to <strong>GuardDuty</strong></li>
+<li>For Targets, click <strong>Add Target</strong>, select <strong>Lambda Function</strong>, and then select <strong>GuardDuty-SFO-Loft-Lab2-Remediation</strong>.  <i>** If you don't see this function you may have to wait until the CloudFormation stack has completed</i></li>
+<li>Click <strong>Configure Details</strong></li></ul>
+<img src="images/cloudwatch-rule.png" alt="CloudWatch Rule">
+<li>On the <strong>Configure Details</strong> screen give the Rule a name and click <strong>Create</strong>.</li> 
+</ol>
+
+<hr>
+
+<h3 id="toc_9"><i>Attack Simulation</i></h3>
+
+<h3 id="toc_10">Set a New Profile with EC2 IAM Credentials</h3>
+
+<p>Next, you need to take the EC2 IAM credentials off the instance and create a profile locally.  You can do this by either connecting to the instance via SSH and querying the instance metadata or you can find the credentials in the AWS Systems Manager Store.  On boot the instance exported its IAM credentials to the Parameter Store to allow you to easily retreive these without connecting to the instance.</p>
+
+<p><strong>Finding the Credentials in the Parameter Store</strong></p>
+
+<ol>
+<li>Ensure you have the <a href="http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html">AWS CLI</a> installed</a></li>
+<li>Open the <a href="https://console.aws.amazon.com/ec2">EC2 console</a></li>
+<li>In the navigation pane on the left, scroll all the way to the bottom and click on <strong>Parameter Store</strong></li>
+<li>You should see three parameters; gd_access_key_id, gd_secret_key, and gd_session_token.  As shown below, click on the parameters and in the <strong>Description</strong> tab click <strong>Show</strong> to decrypt and view the secret.</li>
+
+<img src="images/iam-parameters.png" alt="IAM Credentials" style="width: 50%; height: 50%">
+</ol>
+
+<p><strong>Creating a New Profile</strong></p>
+
+<p>Now that you know where to find your ECS IAM Credentials, you will need to create a new AWS CLI <a href="http://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html">Named Profile</a> in your credentials file.  There are a number of ways to do this but below are some commands to help get you started:</p>
+
+<ol>
+<li>In a command prompt run the following command to create a new profile called "attacker": <i>aws configure --profile attacker</i></li>
+<li>For "AWS Access Key ID" copy and paste the gd_access_key_id paramter</li>
+<li>For "AWS Secret Access Key" copy and paste the gd_secret_key paramter</li>
+<li>For "Default region name" type in <i>us-west-2</i></li>
+<li>Hit enter to leave "Default output format" as None.</i></li>
+</ol>
+
+<p>Now if you view your ~/.aws/credentials file (command: <i>cat ~/.aws/credentials</i>) you should see a named profile called <strong>attacker</strong>.  Since we're using temporary credentials we took from the EC2 instance we also need to include the Session Token in the profile and you're also going to hardcode the region in as well in ensure you don't accidently use a different region.  Please use an editor of your choice to modify your ~/.aws/credentials file to include the session token and region. (e.g. command: <i>vim ~/.aws/credentials</i>).  Below is an example of what the named profile should look like:</p>
+
+<img src="images/attacker-profile.png" alt="Attacker Profile" style="width: 50%; height: 50%">
+
+<h3 id="toc_11">Run Commands using the EC2 IAM Credentials</h3>
+
+<p>Now that you have your named profile set you can use it make API calls.  Use the commands below to query different services to see what you have access to (don't be surprised if you see some access denied responses):</p>
+
+<p><strong><i>Let's see if we have any IAM permissions:</i></strong><br />
+<i>aws iam get-user --profile attacker</i><br />
+<i>aws iam create-user --user-name Sasquatch --profile attacker</i></p>
+
+<p><strong><i>What about DynamoDB:</i></strong><br />
+<i>aws dynamodb list-tables --profile attacker</i><br />
+<i>aws dynamodb describe-table --table-name GuardDuty-SFO-Loft-Lab2-Customers --profile attacker</i></p>
+<p><strong><i>Can we query the data?</i></strong><br />
+<i>aws dynamodb scan --table-name GuardDuty-SFO-Loft-Lab2-Customers --profile attacker</i><br />
+<i>aws dynamodb put-item --table-name GuardDuty-SFO-Loft-Lab2-Customers --item '{ "name": { "S": "do_something" }, "lastrun": {"S": "201412250053"}, "lastworker":{"S": "1.2.3.4"} }' --profile attacker</i><br />
+<i>aws dynamodb scan --table-name GuardDuty-SFO-Loft-Lab2-Customers --profile attacker</i><br />
+<i>aws dynamodb delete-table --table-name GuardDuty-SFO-Loft-Lab2-Customers --profile attacker</i><br />
+<i>aws dynamodb list-tables --profile attacker</i></p>
+
+<p><strong><i>Do you have access to Systems Manager Parameter Store:</i></strong><br />
+<i>aws ssm describe-parameters --profile attacker</i><br />
+<i>aws ssm get-parameters --names "prod_dbpwd_gd_sample" --profile attacker</i><br />
+<i>aws ssm get-parameters --names "prod_dbpwd_gd_sample" --with-decryption --profile attacker</i><br />
+<i>aws ssm delete-parameter --name "prod_dbpwd_gd_sample" --profile attacker</i></p>
+
+<p>Feel free to make other calls to see what you access to with those credentials.</p>
+
+<h3 id="toc_12">Launch an Instance through the Console</h3>
+
+<p>Go to the <a href="https://console.aws.amazon.com/ec2">EC2 console</a> and launch an instance of your choosing.  This is unrelated to the instance credentials you stole before and should help in generating findings related to your IP address on the Threat List.</p>
+
+<p>After it's running go ahead and terminate it. Again, this is just to generate a number of API calls.</p>
+
+<p><strong>Based on the simulated attacks above what <a href="https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_finding-types.html">GuardDuty Findings</a> do you expect to see?</strong></p>
+<hr>
+
+<h3 id="toc_13"><i>Remediation</i></h3>
+
+<p>These findings may take 10-15 minutes to show up in GuardDuty (IAM EC2 credential will take more like 25 minutes) so continuously check back in the service to see when they populate.  You should also see alerts sent to your email.  In the mean time below are some recommended steps to remediating compromised credentials in your AWS environment.</p>
+
+<ul>
+<li><strong>Identify the owner of the credentials.</strong><br />
+If a GuardDuty finding informs you of a potential compromise to AWS credentials, you can locate the affected IAM user by their access keys or user name.<br />
+
+To find the access key ID or user name that belongs to a potentially compromised IAM user, open the console and view the details pane of the finding that you're analyzing. For more information, see <a href="https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings.html#guardduty_working-with-findings">Working with GuardDuty Findings</a>. After you have the access key ID or user name, open the IAM console, choose the Users tab, and locate the affected user by typing the access key ID or user name in the Find users by username or access key search field. </li>
+<li><strong>Determine whether the credentials were used by the IAM user legitimately</strong><br />Contact the IAM user that you've located, and verify whether the user legitimately used the access key and user name that is identified in the GuardDuty finding. For example, find out if the user did the following:
+<ul>
+    <li>Invoked the API operation that was listed in the GuardDuty finding</li>
+
+    <li>Invoked the API operation at the time that is listed in the GuardDuty finding</li>
+
+    <li>Invoked the API operation from the IP address that is listed in the GuardDuty finding</li>
+</ul>
+
+</li>
+<li>You can also use information in the <a href="https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings.html#guardduty_working-with-findings">My AWS account may be compromised</a> article to remediate the issue. </li>
+</ul>
+
+
+
+<p><strong>How would you remediate the issues you simulated today within your company?</strong></p>
+
+<h3 id="toc_14">View the Remediation Lambda Function</h3>
+
+<p>Go to the <a href="https://console.aws.amazon.com/lambda">Lambda console</a> and review the <strong>GuardDuty-SFO-Loft-Lab2-Remediation</strong>.</p>
+
+<p><strong>Questions</strong></p>
+<ul>
+<li>What is the function doing to remediate the GuardDuty Findings?</li>
+<li>Is it remediating all of the GuardDuty Findings?</li>
+<li>How can you validate that the EC2 IAM credentials are no longer valid?</li>
+<li>Will this remediation affect the availability of an application running on that instance?</li>
+<li>How long were the EC2 IAM Credentials active?</li>
+<li>What other actions were taken while the Crendentials were active? Is it shown in the GuardDuty finding? If not, then how would you find this out?</li>
+<li>What are the risks involved with using this remediation function and how would you mitigate them?</li>
+</ul>
+
+<p>If all has gone well you should have successfully simulated the following findings and received email alerts for both findings and remediations:
+  <ul>
+    <li><a href="https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_finding-types.html#recon2">Recon:IAMUser/MaliciousIPCaller.Custom</a> (with no automated alerts or remediation)</li>
+    <li><a href="http://docs.aws.amazon.com/guardduty/latest/ug/guardduty_finding-types.html#unauthorized2">UnauthorizedAccess:IAMUser/MaliciousIPCaller.Custom</a> (with automated alerts but no remediation)</li>
+    <li><a href="http://docs.aws.amazon.com/guardduty/latest/ug/guardduty_finding-types.html#unauthorized11">UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration</a> (with automated alerts and remedation)</li>
+  </ul></p>
+
+  <p>To verify that the <strong>InstanceCredentialExfiltration</strong> finding was remediated you can run one of the attacker commands you ran earlier (e.g. <i>aws dynamodb list-tables --profile attacker</i>).  You should see a response that states that there is an explicit deny for that action.  This is because the rememdiation Lambda Function attaches a policy to the EC2 IAM Role that revokes all active sessions.  You can view this policy within IAM under the Role.</p>
+
+<hr>
+
+<h3 id="toc_9"><i>Clean Up</i></h3>
+<p>If you have time and would like to try out the extra credit, feel free to skip this until after you've completed the extra credit.</p>
+<ol>
+<li>Delete GuardDuty Threatlist and list from S3 Bucket</li>
+<li>Delete Parameters in Parameter Store</li>
+<li>Delete CloudWatch Rule</li>
+<li>Delete GuardDuty-SFO-Loft-Lab2 IAM Role (this is because the remediation Lambda function added a policy to revoke the sessions so you now have to delete it manually so it's drifted from the CloudFormation state)</li>
+<li>Delete the CloudFormation Stack.  If you see any errors it means you didn't delete the Role above. Please delete the Role and try again.</li>
+<li>You may also want to delete the S3 bucket you created for the threat list and disable GuardDuty (although there is no charge for the first 30 days of GuardDuty usage).</li>
+</ol>
+
+<hr>
+<h3 id="toc_15"><i>Extra Credit</i></h3>
+
+<h3 id="toc_10">Enhance the Auto-Remediation</h3>
+
+<p>Right now the Lambda Function is only revoking the current sessions for the Role associated with the instance.  Below are a couple enhancement options to add additional information in the email alert as well as limit the downtown of an application running on the instance.</p>
+
+<p><strong>Option 1 - Create a Lambda Function to Process Other Findings</strong>: Currently the Lambda function only remediates findings related to stolen EC2 IAM Credentials.  Create a new function that processes the other IAM related to findings.  </p>
+<ol>
+<li>Create a new Lambda function for processing (base it off the existing one). This function should disable the access key and publish a remediation alert to the existing SNS Topic. You can use the IAM policy associated with the current remediation Lambda Function (you'll need to create a new policy and copy paste it).</li>
+<li>Create a CloudWatch Rule to trigger the Lambda function (same steps as before). Limit it to only trigger for events from your recently created IAM User (this is to ensure you don't auto-remediate your primary credentials you're logged in as).</li>
+<li>Create a new IAM User with programmatic access.</li>
+<li>Create a second attacker profile within the AWS CLI (same steps as before but you won't need the session token) with the credentials for that user.</li>
+<li>Simulate API calls to generate findings (you can follow the same steps as before).</li>
+<li>Wait 10-15min and verfiy the findings your remediation is working as expected.
+</ol>
+
+<p><strong>Option 2 - Add Credential Lifetime to Email Alert</strong>: Modify the function to pull the session token expiration date from the Parameter Store and add a more detailed email alert that includes how long the credential were active.  This will enable the person being alerted to identiy how far to look back in the CloudTrail logs to verify what the compromised credentials may have been used for.</p>
+
+<p><strong>Option 3 - Add a New Instance Profile to all Affected Instances</strong>: Enhance the function to modify the instance profiles for all instances that are using the compromised Role.  This will limit downtime of an application that's running on the instance because the credentials should be refreshed allowing the instance to continue to interact with AWS resources.</p>
+
+
+</body>
+
+</html>

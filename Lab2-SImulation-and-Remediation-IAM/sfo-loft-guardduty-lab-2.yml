@@ -1,0 +1,529 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: AWS CloudFormation Template to configure the AWS GuardDuty lab for the December 2017 SFO Security Loft. ** This template will only run in US regions due to the AMI mapping.
+
+Parameters:
+  
+  ResourceName:
+    Type: String
+    Default: GuardDuty-SFO-Loft-Lab2
+    AllowedValues: 
+      - GuardDuty-SFO-Loft-Lab2
+    Description: Name of Resources created for this lab.
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+    Description: 'Name of an existing EC2 KeyPair to enable SSH access to your servers.'
+  EmailAddress:
+    Description: Email Address for receiving remedation alerts.
+    Type: String
+
+Metadata: {}
+
+Mappings:
+  
+  RegionMap: 
+    us-east-1: 
+      "64": "ami-55ef662f"
+    us-east-2: 
+      "64": "ami-15e9c770"
+    us-west-1: 
+      "64": "ami-a51f27c5"
+    us-west-2: 
+      "64": "ami-bf4193c7"
+
+Conditions: {}
+
+Resources:
+  
+  # Network Infrastructure
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/24
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Ref ResourceName
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Ref ResourceName
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: InternetGateway
+      VpcId: !Ref VPC
+  RouteTable:
+    DependsOn:
+      - VPC
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref ResourceName
+      VpcId: !Ref VPC
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref RouteTable
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.0.0/26
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Ref ResourceName
+      VpcId: !Ref VPC
+  SubnetAssoc:
+    DependsOn:
+      - Subnet
+      - RouteTable
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref Subnet
+  PublicNACL:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        -
+          Key: Name
+          Value: !Ref ResourceName
+        -
+          Key: Network
+          Value: Public
+  InboundPublicNACLEntry:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicNACL
+      RuleNumber: 100
+      Protocol: -1
+      RuleAction: allow
+      Egress: false
+      CidrBlock: '0.0.0.0/0'
+      PortRange:
+        From: 0
+        To: 65535
+  OutboundPublicNACLEntry:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicNACL
+      RuleNumber: 100
+      Protocol: -1
+      RuleAction: allow
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 0
+        To: 65535
+  SubnetNACLAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet
+      NetworkAclId: !Ref PublicNACL
+  TargetSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Ref ResourceName
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+
+  # Compromised Instance IAM Role
+  CompromisedRole: 
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName: !Ref ResourceName
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement: 
+          - 
+            Effect: Allow
+            Principal: 
+              Service: 
+                - ec2.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      Path: /
+      Policies: 
+        - 
+          PolicyName: GuardDutyCompromisedPolicy
+          PolicyDocument: 
+            Version: 2012-10-17
+            Statement: 
+              - 
+                Effect: Allow
+                Action:
+                  - ssm:PutParameter
+                  - ssm:DescribeParameters
+                  - ssm:GetParameters
+                  - ssm:DeleteParameter
+                Resource: 
+                  Fn::Join:
+                  - ':'
+                  - ["arn:aws:ssm", !Ref "AWS::Region", !Ref "AWS::AccountId", "parameter/*"]
+              - 
+                Effect: Allow
+                Action:
+                  - ssm:DescribeParameters
+                Resource: "*"
+              - 
+                Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource:
+                  Fn::GetAtt: 
+                    - "CustDynamoDBTable"
+                    - "Arn"
+              - 
+                Effect: Allow
+                Action:
+                  - dynamodb:ListTables
+                  - dynamodb:DescribeTable
+                Resource: '*'
+  CompromisedInstanceProfile: 
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      InstanceProfileName: !Ref ResourceName
+      Path: /
+      Roles: 
+        - !Ref CompromisedRole
+  
+  # Compromised Instance
+  CompromisedInstance: 
+    Type: AWS::EC2::Instance
+    Properties: 
+      InstanceType: t2.micro
+      IamInstanceProfile: !Ref CompromisedInstanceProfile
+      KeyName: !Ref KeyName
+      ImageId: 
+        Fn::FindInMap: 
+          - RegionMap
+          - !Ref "AWS::Region"
+          - '64'
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          GroupSet:
+            - !Ref TargetSecurityGroup
+          SubnetId: 
+            Ref: Subnet
+      Tags:
+          - Key: Name
+            Value: 
+              Fn::Join:
+              - ': '
+              - [!Ref ResourceName, 'Compromised']
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+
+            # Set Variables
+            aws configure set default.region ${Region}
+            access_key_id=`curl http://169.254.169.254/latest/meta-data/iam/security-credentials/${Profile} | grep AccessKeyId | cut -d':' -f2 | sed 's/[^0-9A-Z]*//g'`
+            secret_key=`curl http://169.254.169.254/latest/meta-data/iam/security-credentials/${Profile} | grep SecretAccessKey | cut -d':' -f2 | sed 's/[^0-9A-Za-z/+=]*//g'`
+            token=`curl http://169.254.169.254/latest/meta-data/iam/security-credentials/${Profile} | grep Token | cut -d':' -f2 | sed 's/[^0-9A-Za-z/+=]*//g'`
+            expiration=`curl http://169.254.169.254/latest/meta-data/iam/security-credentials/${Profile} | grep Expiration | cut -d':' -f2 | sed 's/[^0-9A-Za-z/+=]*//g'`
+          
+            # Set Parameters in SSM
+            aws ssm put-parameter --name 'gd_access_key_id' --type "SecureString" --value $access_key_id --overwrite
+            aws ssm put-parameter --name 'gd_secret_key' --type "SecureString" --value $secret_key --overwrite
+            aws ssm put-parameter --name 'gd_session_token' --type "SecureString" --value $token --overwrite
+            aws ssm put-parameter --name 'gd_expiration' --type "SecureString" --value $expiration --overwrite
+            aws ssm put-parameter --name 'prod_dbpwd_gd_sample' --type "SecureString" --value 'Password123' --overwrite
+
+          - 
+            Profile:
+              !Ref ResourceName
+            Region:
+              !Ref "AWS::Region"
+            DB:
+              Fn::Join:
+              - '-'
+              - [!Ref ResourceName, 'Customers']
+
+  # Mock Customer Database
+  CustDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions: 
+        - 
+          AttributeName: "name"
+          AttributeType: "S"
+      KeySchema: 
+        - 
+          AttributeName: "name"
+          KeyType: "HASH"
+      ProvisionedThroughput: 
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+      TableName: 
+        Fn::Join:
+        - '-'
+        - [!Ref ResourceName, 'Customers']
+
+  # Remediation Lambda Role
+  RemediationLambdaRole: 
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName: 
+        Fn::Join:
+              - '-'
+              - [!Ref ResourceName, 'Lambda']
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement: 
+          - 
+            Effect: Allow
+            Principal: 
+              Service: 
+                - lambda.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      Path: /
+      Policies: 
+        - 
+          PolicyName: !Ref ResourceName
+          PolicyDocument: 
+            Version: 2012-10-17
+            Statement: 
+              - 
+                Effect: Allow
+                Action:
+                  - ssm:DescribeParameters
+                Resource: '*'
+              - 
+                Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: '*'
+              - 
+                Effect: Allow
+                Action:
+                  - ec2:ReplaceIamInstanceProfileAssociation
+                Resource: '*'
+              - 
+                Effect: Allow
+                Action:
+                  - ec2:DescribeIamInstanceProfileAssociations
+                Resource: '*'
+              - 
+                Effect: Allow
+                Action:
+                  - iam:CreateInstanceProfile
+                Resource: '*'
+              - 
+                Effect: Allow
+                Action:
+                  - iam:AddRoleToInstanceProfile
+                  - iam:RemoveRoleFromInstanceProfile
+                  - iam:ListInstanceProfilesForRole
+                Resource: '*'
+              - 
+                Effect: Allow
+                Action:
+                  - iam:DeleteInstanceProfile
+                Resource: 
+                  Fn::GetAtt: 
+                    - "CompromisedInstanceProfile"
+                    - "Arn"
+              - 
+                Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: 
+                  Fn::GetAtt: 
+                    - "CompromisedRole"
+                    - "Arn"
+              - 
+                Effect: Allow
+                Action:
+                  - iam:PutRolePolicy
+                Resource: 
+                  Fn::GetAtt: 
+                    - "CompromisedRole"
+                    - "Arn"
+              - 
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref RemediationSNSTopic
+              - 
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  # Remediation Lambda
+  RemediationLambda: 
+    Type: "AWS::Lambda::Function"
+    Properties: 
+      FunctionName: 
+        Fn::Join:
+          - '-'
+          - [!Ref ResourceName, 'Remediation']
+      Handler: "index.handler"
+      Environment:
+        Variables:
+          TOPIC_ARN: !Ref RemediationSNSTopic
+      Role: 
+        Fn::GetAtt: 
+          - "RemediationLambdaRole"
+          - "Arn"
+      Code: 
+        ZipFile: |
+          from __future__ import print_function
+          import json
+          import time
+          import datetime
+          import os
+          import uuid
+          import boto3
+          def handler(event, context):
+  
+            # Log out event
+            print("log -- Event: %s " % json.dumps(event))
+            
+            # Create generic function response
+            response = "Other GuardDuty Finding: Skipping auto-remediation."
+
+            if event['detail']['type'] == "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration":
+              
+              # Set Clients
+              iam = boto3.client('iam')
+              ec2 = boto3.client('ec2')
+
+              # Set Role Variable
+              role = event['detail']['resource']['accessKeyDetails']['userName']
+
+              # Current Time
+              time = datetime.datetime.utcnow().isoformat()
+
+              # Set Revoke Policy
+              policy = """
+                {
+                  "Version": "2012-10-17",
+                  "Statement": {
+                    "Effect": "Deny",
+                    "Action": "*",
+                    "Resource": "*",
+                    "Condition": {"DateLessThan": {"aws:TokenIssueTime": "%s"}}
+                  }
+                }
+              """ % time
+
+              # Add policy to Role to Revoke all Current Sessions
+              iam.put_role_policy(
+                RoleName=role,
+                PolicyName='%s-RevokeOldSessions' % role,
+                PolicyDocument=policy.replace('\n', '').replace(' ', '')
+              )
+
+              response = "GuardDuty Remediation ID:%s: GuardDuty discovered EC2 IAM credentials (Role: %s) being used outside of the EC2 service.  All sessions have been revoked.  Please follow up with any additional remediation actions." % (event['detail']['id'], role)
+                              
+              sns = boto3.client('sns')
+
+              sns.publish(
+                TopicArn=os.environ['TOPIC_ARN'],    
+                Message=response
+              )
+              
+            print("log -- Response: %s " % response)
+            return response
+      Runtime: "python2.7"
+      Timeout: "35"
+  RemediationLambdaInvokePermissions: 
+    DependsOn:
+      - RemediationLambda
+    Type: "AWS::Lambda::Permission"
+    Properties: 
+      FunctionName: !Ref "RemediationLambda"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+
+  # Remediation Topic
+  RemediationSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref ResourceName
+      Subscription:
+      - Endpoint: !Ref EmailAddress
+        Protocol: email
+
+  GuardDutyEventCFN: 
+    Type: "AWS::Events::Rule"
+    Properties: 
+      Description: "GuardDuty: UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration"
+      EventPattern: 
+        source:
+        - aws.guardduty
+        detail:
+          type:
+          - "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration"
+      State: "ENABLED"
+      Targets: 
+        - 
+          Arn: 
+            Ref: "RemediationSNSTopic"
+          Id: "RemediationSNSTopic-EC2-IAM"
+          InputTransformer:
+            InputTemplate: '"GuardDuty Finding ID:<gdid>: An EC2 instance IAM credentials (Role: <userName>) may be compromised and should be investigated. Go to https://us-west-2.console.aws.amazon.com/guardduty/home?region=us-west-2#/findings"'
+            InputPathsMap:
+              userName: "$.detail.resource.accessKeyDetails.userName"
+              gdid: "$.detail.id"
+
+  GuardDutyEventCFN2: 
+    Type: "AWS::Events::Rule"
+    Properties: 
+      Description: "GuardDuty: UnauthorizedAccess:IAMUser/MaliciousIPCaller.Custom"
+      EventPattern: 
+        source:
+        - aws.guardduty
+        detail:
+          type:
+          - "UnauthorizedAccess:IAMUser/MaliciousIPCaller.Custom"
+      State: "ENABLED"
+      Targets: 
+        - 
+          Arn: 
+            Ref: "RemediationSNSTopic"
+          Id: "RemediationSNSTopic-ThreatList"
+          InputTransformer:
+            InputTemplate: '"GuardDuty Finding ID:<gdid>: An AWS API operation was invoked (userName: <userName>) from an IP address that is included on your threat list and should be investigated. Go to https://us-west-2.console.aws.amazon.com/guardduty/home?region=us-west-2#/findings"'
+            InputPathsMap:
+              userName: "$.detail.resource.accessKeyDetails.userName"
+              gdid: "$.detail.id"
+
+  GuardDutySNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: ID-GD-Lab2
+        Version: '2012-10-17'
+        Statement:
+        - Sid: SID-GD-Lab2
+          Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: sns:Publish
+          Resource: !Ref RemediationSNSTopic
+      Topics: 
+      - !Ref RemediationSNSTopic
+
+Outputs: {}
